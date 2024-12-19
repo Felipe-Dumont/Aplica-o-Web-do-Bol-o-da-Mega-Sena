@@ -17,36 +17,76 @@ st.set_page_config(page_title="Bolão Mega da Virada", page_icon="🎲")
 # Requer autenticação antes de continuar
 require_auth()
 
-# CSS para estilizar os botões de números
+# CSS atualizado para melhor estilização dos botões
 st.markdown("""
 <style>
+    .numeros-container {
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin: 20px 0;
+    }
+    
+    .numeros-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+        gap: 8px;
+        justify-items: center;
+    }
+    
     .numero-btn {
-        margin: 2px;
-        width: 40px;
-        height: 40px;
+        width: 45px;
+        height: 45px;
         border-radius: 50%;
-        border: 1px solid #4CAF50;
+        border: 2px solid #4CAF50;
         background-color: white;
         color: #4CAF50;
         font-weight: bold;
+        font-size: 16px;
         cursor: pointer;
-        transition: all 0.3s;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
     }
+    
     .numero-btn:hover {
+        transform: scale(1.1);
         background-color: #e8f5e9;
     }
+    
     .numero-btn.selecionado {
         background-color: #4CAF50;
         color: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-    .numeros-grid {
-        display: grid;
-        grid-template-columns: repeat(10, 1fr);
-        gap: 5px;
-        margin: 20px 0;
+    
+    .numeros-selecionados {
+        margin-top: 15px;
+        padding: 10px;
+        background: #e8f5e9;
+        border-radius: 5px;
+        text-align: center;
     }
-    .stButton>button {
-        width: 100%;
+    
+    .numeros-selecionados span {
+        display: inline-block;
+        background: #4CAF50;
+        color: white;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        margin: 0 5px;
+        line-height: 35px;
+        font-weight: bold;
+    }
+    
+    .contador-numeros {
+        text-align: center;
+        margin-bottom: 10px;
+        font-weight: bold;
+        color: #2E7D32;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -87,10 +127,17 @@ with st.form("novo_participante"):
     with col2:
         valor_pago = st.number_input("Valor Pago (R$)", min_value=0.0, value=valor_cota)
     
-    st.write("Escolha 6 números (1-60):")
+    st.markdown("### Escolha 6 números")
     
-    # Grade de números
-    html_numeros = '<div class="numeros-grid">'
+    # Container para os números
+    html_numeros = '''
+    <div class="numeros-container">
+        <div class="contador-numeros">
+            Selecionados: <span id="contador">0</span>/6
+        </div>
+        <div class="numeros-grid">
+    '''
+    
     for numero in range(1, 61):
         classe = "numero-btn selecionado" if numero in st.session_state.numeros_selecionados else "numero-btn"
         html_numeros += f'''
@@ -101,31 +148,59 @@ with st.form("novo_participante"):
                 {numero}
             </button>
         '''
-    html_numeros += '</div>'
-
-    st.components.v1.html(html_numeros + '''
-        <script>
-            function handleNumeroClick(numero) {
-                const btn = document.getElementById('num-' + numero);
-                const isSelected = btn.classList.contains('selecionado');
-                const selectedCount = document.getElementsByClassName('selecionado').length;
-                
-                if (!isSelected && selectedCount < 6) {
-                    btn.classList.add('selecionado');
-                } else if (isSelected) {
-                    btn.classList.remove('selecionado');
-                }
-                
-                // Envia o evento para o Streamlit
-                const data = {numero: numero};
-                window.parent.postMessage({type: "numero_clicked", data: data}, "*");
-            }
-        </script>
-    ''', height=300)
     
-    # Mostra números selecionados
-    numeros_selecionados = sorted(list(st.session_state.numeros_selecionados))
-    st.write(f"Números selecionados: {numeros_selecionados}")
+    html_numeros += '''
+        </div>
+        <div class="numeros-selecionados" id="numeros-display">
+            Números selecionados: 
+        </div>
+    </div>
+    '''
+
+    # JavaScript atualizado para melhor interação
+    js_code = '''
+    <script>
+        function atualizarContador() {
+            const selecionados = document.getElementsByClassName('selecionado').length;
+            document.getElementById('contador').textContent = selecionados;
+        }
+        
+        function atualizarNumerosDisplay() {
+            const selecionados = Array.from(document.getElementsByClassName('selecionado'))
+                .map(btn => parseInt(btn.textContent))
+                .sort((a, b) => a - b);
+            
+            const display = document.getElementById('numeros-display');
+            display.innerHTML = 'Números selecionados: ' + 
+                selecionados.map(num => `<span>${num}</span>`).join(' ');
+        }
+        
+        function handleNumeroClick(numero) {
+            const btn = document.getElementById('num-' + numero);
+            const isSelected = btn.classList.contains('selecionado');
+            const selectedCount = document.getElementsByClassName('selecionado').length;
+            
+            if (!isSelected && selectedCount < 6) {
+                btn.classList.add('selecionado');
+            } else if (isSelected) {
+                btn.classList.remove('selecionado');
+            }
+            
+            atualizarContador();
+            atualizarNumerosDisplay();
+            
+            // Envia o evento para o Streamlit
+            const data = {numero: numero};
+            window.parent.postMessage({type: "numero_clicked", data: data}, "*");
+        }
+        
+        // Inicialização
+        atualizarContador();
+        atualizarNumerosDisplay();
+    </script>
+    '''
+
+    st.components.v1.html(html_numeros + js_code, height=500)
     
     submitted = st.form_submit_button("Adicionar Participante")
     
