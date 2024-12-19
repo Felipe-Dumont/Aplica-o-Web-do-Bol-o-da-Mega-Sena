@@ -106,8 +106,8 @@ with st.sidebar:
     st.header("Configurações")
     valor_cota = st.number_input("Valor da Cota (R$)", min_value=1.0, value=10.0)
 
-# Atualizar a parte de seleção de números no formulário
-with st.form("novo_participante"):
+# Formulário para adicionar participante
+with st.form("novo_participante", clear_on_submit=True):
     st.subheader("Adicionar Novo Participante")
     col1, col2 = st.columns(2)
     
@@ -126,56 +126,25 @@ with st.form("novo_participante"):
     if 'numeros_selecionados' not in st.session_state:
         st.session_state.numeros_selecionados = set()
     
-    # Estilo CSS para os botões
-    st.markdown("""
-        <style>
-            div[data-testid="column"] {
-                text-align: center;
-            }
-            .stButton > button {
-                width: 45px;
-                height: 45px;
-                border-radius: 50%;
-                background-color: white;
-                color: #4CAF50;
-                border: 2px solid #4CAF50;
-                font-weight: bold;
-                margin: 2px;
-                padding: 0px;
-            }
-            .stButton > button:hover {
-                background-color: #e8f5e9;
-                transform: scale(1.1);
-            }
-            .numero-selecionado {
-                background-color: #4CAF50 !important;
-                color: white !important;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-    
-    # Exibir contador de números selecionados
-    st.markdown(f"<div style='text-align: center; margin: 10px 0;'>"
-               f"<b>Selecionados: {len(st.session_state.numeros_selecionados)}/6</b></div>",
-               unsafe_allow_html=True)
-    
     # Criar grid de números
     for linha in range((total_numeros + numeros_por_linha - 1) // numeros_por_linha):
         cols = st.columns(numeros_por_linha)
         for i in range(numeros_por_linha):
             numero = linha * numeros_por_linha + i + 1
             if numero <= total_numeros:
-                if cols[i].button(
+                # Criar um checkbox estilizado como botão
+                is_selected = numero in st.session_state.numeros_selecionados
+                if cols[i].checkbox(
                     str(numero),
+                    value=is_selected,
                     key=f"num_{numero}",
-                    type="secondary",
-                    use_container_width=True,
+                    help="Clique para selecionar/desselecionar"
                 ):
+                    if numero not in st.session_state.numeros_selecionados and len(st.session_state.numeros_selecionados) < 6:
+                        st.session_state.numeros_selecionados.add(numero)
+                else:
                     if numero in st.session_state.numeros_selecionados:
                         st.session_state.numeros_selecionados.remove(numero)
-                    elif len(st.session_state.numeros_selecionados) < 6:
-                        st.session_state.numeros_selecionados.add(numero)
-                    st.rerun()
     
     # Exibir números selecionados
     if st.session_state.numeros_selecionados:
@@ -192,10 +161,13 @@ with st.form("novo_participante"):
             unsafe_allow_html=True
         )
     
+    # Botão de submit do formulário
     submitted = st.form_submit_button("Adicionar Participante")
     
     if submitted:
-        if len(st.session_state.numeros_selecionados) != 6:
+        if not nome:
+            st.error("Por favor, preencha o nome do participante!")
+        elif len(st.session_state.numeros_selecionados) != 6:
             st.error("Por favor, escolha exatamente 6 números!")
         else:
             novo_participante = Participante(
