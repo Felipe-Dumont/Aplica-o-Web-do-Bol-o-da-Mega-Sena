@@ -209,29 +209,6 @@ with st.form("novo_participante"):
                 st.session_state.numeros_selecionados = set()
                 st.rerun()
 
-# Componente JavaScript para capturar eventos de clique
-components_js = """
-<script>
-    window.addEventListener('message', function(e) {
-        if (e.data.type === 'numero_clicked') {
-            window.parent.postMessage({
-                type: 'streamlit:set_widget_value',
-                data: {
-                    widgetId: 'numero_clicked',
-                    value: e.data.data.numero
-                }
-            }, '*');
-        }
-    });
-</script>
-"""
-st.components.v1.html(components_js, height=0)
-
-# Captura eventos de clique nos números
-numero_clicked = st.empty()
-if numero_clicked:
-    toggle_numero(numero_clicked)
-
 # Exibição dos participantes
 participantes = ParticipanteService.listar_participantes()
 if participantes:
