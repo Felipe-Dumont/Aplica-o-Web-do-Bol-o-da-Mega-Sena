@@ -143,3 +143,44 @@ class ParticipanteService:
                     todos_numeros[num] = [participante.nome]
         
         return {k:v for k,v in todos_numeros.items() if len(v) > 1} 
+
+    @staticmethod
+    def verificar_resultados(numeros_sorteados):
+        participantes = ParticipanteService.listar_participantes()
+        resultados = {
+            'ganhadores': [],
+            'maiores_pontuadores': []
+        }
+        
+        max_acertos = 0
+        for participante in participantes:
+            # Converter números para set para fazer a interseção
+            numeros_participante = set(participante.numeros_escolhidos)
+            numeros_sorteados_set = set(numeros_sorteados)
+            
+            # Calcular acertos
+            acertos = len(numeros_participante.intersection(numeros_sorteados_set))
+            
+            # Se acertou tudo
+            if acertos == 6:
+                resultados['ganhadores'].append({
+                    'nome': participante.nome,
+                    'numeros': sorted(participante.numeros_escolhidos),
+                    'acertos': acertos
+                })
+            
+            # Atualizar máximo de acertos
+            max_acertos = max(max_acertos, acertos)
+            
+            # Se não houver ganhadores, guardar os maiores pontuadores
+            if acertos >= 3:  # Guardar quem acertou 3 ou mais
+                resultados['maiores_pontuadores'].append({
+                    'nome': participante.nome,
+                    'numeros': sorted(participante.numeros_escolhidos),
+                    'acertos': acertos
+                })
+        
+        # Ordenar maiores pontuadores por número de acertos
+        resultados['maiores_pontuadores'].sort(key=lambda x: x['acertos'], reverse=True)
+        
+        return resultados 
