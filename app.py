@@ -106,18 +106,7 @@ with st.sidebar:
     st.header("Configurações")
     valor_cota = st.number_input("Valor da Cota (R$)", min_value=1.0, value=10.0)
 
-# Inicialização do estado para números selecionados
-if 'numeros_selecionados' not in st.session_state:
-    st.session_state.numeros_selecionados = set()
-
-# Função para alternar seleção de número
-def toggle_numero(numero):
-    if numero in st.session_state.numeros_selecionados:
-        st.session_state.numeros_selecionados.remove(numero)
-    elif len(st.session_state.numeros_selecionados) < 6:
-        st.session_state.numeros_selecionados.add(numero)
-
-# Formulário para adicionar participante
+# Atualizar a parte de seleção de números no formulário
 with st.form("novo_participante"):
     st.subheader("Adicionar Novo Participante")
     col1, col2 = st.columns(2)
@@ -129,78 +118,79 @@ with st.form("novo_participante"):
     
     st.markdown("### Escolha 6 números")
     
-    # Container para os números
-    html_numeros = '''
-    <div class="numeros-container">
-        <div class="contador-numeros">
-            Selecionados: <span id="contador">0</span>/6
-        </div>
-        <div class="numeros-grid">
-    '''
+    # Criar grid de números usando colunas do Streamlit
+    numeros_por_linha = 10
+    total_numeros = 60
     
-    for numero in range(1, 61):
-        classe = "numero-btn selecionado" if numero in st.session_state.numeros_selecionados else "numero-btn"
-        html_numeros += f'''
-            <button type="button" 
-                class="{classe}"
-                onclick="handleNumeroClick({numero})"
-                id="num-{numero}">
-                {numero}
-            </button>
-        '''
+    # Inicializar números selecionados se não existir
+    if 'numeros_selecionados' not in st.session_state:
+        st.session_state.numeros_selecionados = set()
     
-    html_numeros += '''
-        </div>
-        <div class="numeros-selecionados" id="numeros-display">
-            Números selecionados: 
-        </div>
-    </div>
-    '''
-
-    # JavaScript atualizado para melhor interação
-    js_code = '''
-    <script>
-        function atualizarContador() {
-            const selecionados = document.getElementsByClassName('selecionado').length;
-            document.getElementById('contador').textContent = selecionados;
-        }
-        
-        function atualizarNumerosDisplay() {
-            const selecionados = Array.from(document.getElementsByClassName('selecionado'))
-                .map(btn => parseInt(btn.textContent))
-                .sort((a, b) => a - b);
-            
-            const display = document.getElementById('numeros-display');
-            display.innerHTML = 'Números selecionados: ' + 
-                selecionados.map(num => `<span>${num}</span>`).join(' ');
-        }
-        
-        function handleNumeroClick(numero) {
-            const btn = document.getElementById('num-' + numero);
-            const isSelected = btn.classList.contains('selecionado');
-            const selectedCount = document.getElementsByClassName('selecionado').length;
-            
-            if (!isSelected && selectedCount < 6) {
-                btn.classList.add('selecionado');
-            } else if (isSelected) {
-                btn.classList.remove('selecionado');
+    # Estilo CSS para os botões
+    st.markdown("""
+        <style>
+            div[data-testid="column"] {
+                text-align: center;
             }
-            
-            atualizarContador();
-            atualizarNumerosDisplay();
-            
-            // Envia o evento para o Streamlit
-            const data = {numero: numero};
-            window.parent.postMessage({type: "numero_clicked", data: data}, "*");
-        }
-        
-        // Inicialização
-        atualizarContador();
-        atualizarNumerosDisplay();
-    </script>
-    '''
-
-    st.components.v1.html(html_numeros + js_code, height=500)
+            .stButton > button {
+                width: 45px;
+                height: 45px;
+                border-radius: 50%;
+                background-color: white;
+                color: #4CAF50;
+                border: 2px solid #4CAF50;
+                font-weight: bold;
+                margin: 2px;
+                padding: 0px;
+            }
+            .stButton > button:hover {
+                background-color: #e8f5e9;
+                transform: scale(1.1);
+            }
+            .numero-selecionado {
+                background-color: #4CAF50 !important;
+                color: white !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Exibir contador de números selecionados
+    st.markdown(f"<div style='text-align: center; margin: 10px 0;'>"
+               f"<b>Selecionados: {len(st.session_state.numeros_selecionados)}/6</b></div>",
+               unsafe_allow_html=True)
+    
+    # Criar grid de números
+    for linha in range((total_numeros + numeros_por_linha - 1) // numeros_por_linha):
+        cols = st.columns(numeros_por_linha)
+        for i in range(numeros_por_linha):
+            numero = linha * numeros_por_linha + i + 1
+            if numero <= total_numeros:
+                if cols[i].button(
+                    str(numero),
+                    key=f"num_{numero}",
+                    type="secondary",
+                    use_container_width=True,
+                ):
+                    if numero in st.session_state.numeros_selecionados:
+                        st.session_state.numeros_selecionados.remove(numero)
+                    elif len(st.session_state.numeros_selecionados) < 6:
+                        st.session_state.numeros_selecionados.add(numero)
+                    st.rerun()
+    
+    # Exibir números selecionados
+    if st.session_state.numeros_selecionados:
+        numeros_ordenados = sorted(st.session_state.numeros_selecionados)
+        st.markdown(
+            "<div style='text-align: center; margin: 20px 0; padding: 10px; "
+            "background-color: #e8f5e9; border-radius: 5px;'>"
+            "<b>Números selecionados:</b><br>" +
+            " ".join([f"<span style='display: inline-block; width: 35px; height: 35px; "
+                     f"line-height: 35px; border-radius: 50%; background-color: #4CAF50; "
+                     f"color: white; margin: 5px; font-weight: bold;'>{num}</span>"
+                     for num in numeros_ordenados]) +
+            "</div>",
+            unsafe_allow_html=True
+        )
     
     submitted = st.form_submit_button("Adicionar Participante")
     
@@ -216,7 +206,6 @@ with st.form("novo_participante"):
             
             if ParticipanteService.adicionar_participante(novo_participante):
                 st.success("Participante adicionado com sucesso!")
-                # Limpa os números selecionados após sucesso
                 st.session_state.numeros_selecionados = set()
                 st.rerun()
 

@@ -19,7 +19,7 @@ class AuthService:
             cursor.execute("SELECT COUNT(*) FROM auth_config")
             if cursor.fetchone()[0] == 0:
                 # Código padrão inicial: "admin123"
-                default_code_hash = hashlib.sha256("admin123".encode()).hexdigest()
+                default_code_hash = hashlib.sha256("algumasenhaaqui".encode()).hexdigest()
                 conn.execute("INSERT INTO auth_config (access_code_hash) VALUES (?)", (default_code_hash,))
             conn.commit()
 
