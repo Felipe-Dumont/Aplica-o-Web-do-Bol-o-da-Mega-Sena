@@ -301,9 +301,9 @@ if participantes:
         {
             'Nome': p.nome,
             'Qtd. Cotas': p.quantidade_cotas,
-            'Valor_Pago': f"R$ {p.valor_pago:.2f}",
-            'Numeros_Escolhidos': str(sorted(p.numeros_escolhidos)),
-            'Data_Pagamento': p.data_pagamento,
+            'Valor Pago': f"R$ {p.valor_pago:.2f}",
+            'Números Escolhidos': ', '.join(f"{num:02d}" for num in sorted(p.numeros_escolhidos)),
+            'Data Pagamento': p.data_pagamento,
             'Status': p.status_pagamento
         }
         for p in participantes

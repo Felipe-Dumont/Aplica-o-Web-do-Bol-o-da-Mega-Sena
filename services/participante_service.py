@@ -10,8 +10,6 @@ class ParticipanteService:
     def adicionar_participante(participante: Participante) -> bool:
         try:
             with get_db() as conn:
-                # Configurar para retornar dicionários
-                conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
                 
                 # Debug
@@ -30,7 +28,7 @@ class ParticipanteService:
                         quantidade_cotas,
                         data_pagamento
                     )
-                    VALUES (?, ?, ?, ?, ?, datetime('now'))
+                    VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'))
                     """,
                     (
                         participante.nome,
@@ -51,27 +49,39 @@ class ParticipanteService:
     def listar_participantes() -> List[Participante]:
         try:
             with get_db() as conn:
-                conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
-                cursor.execute("SELECT * FROM participantes ORDER BY id DESC")
+                cursor.execute("""
+                    SELECT 
+                        id,
+                        nome,
+                        valor_pago,
+                        numeros_escolhidos,
+                        datetime(data_pagamento, 'localtime') as data_pagamento,
+                        status_pagamento,
+                        quantidade_cotas
+                    FROM participantes 
+                    ORDER BY id DESC
+                """)
                 rows = cursor.fetchall()
                 
                 participantes = []
                 for row in rows:
                     try:
                         # Converte a string de números de volta para lista
-                        numeros = [int(n) for n in row['numeros_escolhidos'].split(',') if n]
+                        numeros_str = row[3] if row[3] else ''
+                        numeros = [int(n.strip()) for n in numeros_str.split(',') if n.strip()]
                         
                         participante = Participante(
-                            id=row['id'],
-                            nome=row['nome'],
-                            valor_pago=float(row['valor_pago']),
+                            id=row[0],
+                            nome=row[1],
+                            valor_pago=float(row[2]),
                             numeros_escolhidos=numeros,
-                            data_pagamento=row['data_pagamento'],
-                            status_pagamento=row['status_pagamento'],
-                            quantidade_cotas=int(row['quantidade_cotas'])
+                            data_pagamento=row[4],
+                            status_pagamento=row[5],
+                            quantidade_cotas=int(row[6])
                         )
                         participantes.append(participante)
+                        print(f"Participante carregado: {participante}")
                     except Exception as e:
                         print(f"Erro ao processar participante: {e}")
                         continue
