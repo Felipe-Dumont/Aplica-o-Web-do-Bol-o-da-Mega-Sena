@@ -88,6 +88,33 @@ st.markdown("""
         gap: 0px !important;
         margin: 0px !important;
     }
+    
+    /* Estilo para os checkboxes */
+    .stCheckbox {
+        position: relative;
+        padding: 5px;
+        background-color: white;
+        border-radius: 50%;
+        border: 2px solid #4CAF50;
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 2px;
+    }
+    
+    .stCheckbox:hover {
+        background-color: #e8f5e9;
+        transform: scale(1.05);
+        transition: all 0.2s ease;
+    }
+    
+    .stCheckbox [data-testid="stMarkdownContainer"] p {
+        font-weight: bold;
+        margin: 0;
+        text-align: center;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -189,26 +216,28 @@ with st.form("novo_participante", clear_on_submit=True):
     )
 
     # Grid de números
-    col_grid = st.columns(10)
+    st.write("Selecione seus números:")
+    
+    # Criar grid de números usando columns
     for linha in range(6):
+        cols = st.columns(10)
         for i in range(10):
             numero = linha * 10 + i + 1
             if numero <= 60:
-                with col_grid[i]:
-                    # Verifica se o número já está selecionado
+                with cols[i]:
+                    # Usar checkbox em vez de botão
                     is_selected = numero in st.session_state.numeros_selecionados
-                    # Cria o botão com estilo condicional
-                    if st.form_submit_button(
+                    if st.checkbox(
                         str(numero),
-                        key=f"btn_{numero}",
-                        disabled=len(st.session_state.numeros_selecionados) >= numeros_necessarios and not is_selected,
-                        type="secondary" if not is_selected else "primary"
+                        value=is_selected,
+                        key=f"num_{numero}",
+                        disabled=len(st.session_state.numeros_selecionados) >= numeros_necessarios and not is_selected
                     ):
-                        if is_selected:
-                            st.session_state.numeros_selecionados.remove(numero)
-                        elif len(st.session_state.numeros_selecionados) < numeros_necessarios:
+                        if numero not in st.session_state.numeros_selecionados:
                             st.session_state.numeros_selecionados.add(numero)
-                        st.rerun()
+                    else:
+                        if numero in st.session_state.numeros_selecionados:
+                            st.session_state.numeros_selecionados.remove(numero)
 
     # Exibir números selecionados
     if st.session_state.numeros_selecionados:
@@ -228,8 +257,7 @@ with st.form("novo_participante", clear_on_submit=True):
     col1, col2 = st.columns(2)
     
     with col1:
-        limpar = st.form_submit_button("🎲 Limpar Seleção", type="secondary")
-        if limpar:
+        if st.form_submit_button("🎲 Limpar Seleção", type="secondary"):
             st.session_state.numeros_selecionados = set()
             st.rerun()
     
