@@ -203,62 +203,52 @@ with st.form("novo_participante", clear_on_submit=True):
     if 'numeros_selecionados' not in st.session_state:
         st.session_state.numeros_selecionados = set()
 
+    # Substituir a parte do grid de números por um multiselect
+    numeros_disponiveis = list(range(1, 61))
+    
     # Atualizar o contador para mostrar o total de números necessários
     numeros_necessarios = 6 * quantidade_cotas
     st.markdown(
         f"""
         <div class="contador-container">
-            Selecione {numeros_necessarios - len(st.session_state.numeros_selecionados)} números
-            ({len(st.session_state.numeros_selecionados)}/{numeros_necessarios} selecionados)
+            Você precisa selecionar {numeros_necessarios} números
+            ({len(st.session_state.get('numeros_selecionados', []))}/{numeros_necessarios} selecionados)
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    # Grid de números
-    st.write("Selecione seus números:")
+    # Usar multiselect para seleção dos números
+    numeros_selecionados = st.multiselect(
+        "Selecione seus números:",
+        options=numeros_disponiveis,
+        default=st.session_state.get('numeros_selecionados', []),
+        max_selections=numeros_necessarios,
+        format_func=lambda x: f"{x:02d}"  # Formata os números com zero à esquerda
+    )
     
-    # Criar grid de números usando columns
-    for linha in range(6):
-        cols = st.columns(10)
-        for i in range(10):
-            numero = linha * 10 + i + 1
-            if numero <= 60:
-                with cols[i]:
-                    # Usar checkbox em vez de botão
-                    is_selected = numero in st.session_state.numeros_selecionados
-                    if st.checkbox(
-                        str(numero),
-                        value=is_selected,
-                        key=f"num_{numero}",
-                        disabled=len(st.session_state.numeros_selecionados) >= numeros_necessarios and not is_selected
-                    ):
-                        if numero not in st.session_state.numeros_selecionados:
-                            st.session_state.numeros_selecionados.add(numero)
-                    else:
-                        if numero in st.session_state.numeros_selecionados:
-                            st.session_state.numeros_selecionados.remove(numero)
+    # Atualizar session state
+    st.session_state.numeros_selecionados = numeros_selecionados
 
-    # Exibir números selecionados
-    if st.session_state.numeros_selecionados:
-        numeros_ordenados = sorted(st.session_state.numeros_selecionados)
+    # Exibir números selecionados de forma mais visual
+    if numeros_selecionados:
         st.markdown(
             """
             <div class="numeros-selecionados-container">
                 <h4>Números selecionados:</h4>
                 """ +
-            "".join([f'<span class="numero-selecionado-badge">{num}</span>' 
-                     for num in numeros_ordenados]) +
+            "".join([f'<span class="numero-selecionado-badge">{num:02d}</span>' 
+                     for num in sorted(numeros_selecionados)]) +
             "</div>",
             unsafe_allow_html=True
         )
 
-    # Botões de ação em colunas
+    # Botões de ação
     col1, col2 = st.columns(2)
     
     with col1:
         if st.form_submit_button("🎲 Limpar Seleção", type="secondary"):
-            st.session_state.numeros_selecionados = set()
+            st.session_state.numeros_selecionados = []
             st.rerun()
     
     with col2:
@@ -266,13 +256,13 @@ with st.form("novo_participante", clear_on_submit=True):
         if submitted:
             if not nome:
                 st.error("Por favor, preencha o nome do participante!")
-            elif len(st.session_state.numeros_selecionados) != numeros_necessarios:
+            elif len(numeros_selecionados) != numeros_necessarios:
                 st.error(f"Por favor, escolha exatamente {numeros_necessarios} números!")
             else:
                 novo_participante = Participante(
                     nome=nome,
                     valor_pago=valor_total,
-                    numeros_escolhidos=list(st.session_state.numeros_selecionados),
+                    numeros_escolhidos=numeros_selecionados,
                     status_pagamento=status_pagamento,
                     quantidade_cotas=quantidade_cotas
                 )
