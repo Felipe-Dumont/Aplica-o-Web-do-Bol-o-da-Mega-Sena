@@ -5,7 +5,7 @@ from config.database import init_db
 from models.participante import Participante
 from services.participante_service import ParticipanteService
 from auth.auth_service import AuthService
-from pages.login import require_auth
+from pages_.login import require_auth
 import time
 
 # Inicialização do banco de dados e autenticação
@@ -54,7 +54,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Configurar navegação no sidebar
-# st.sidebar.title("Navegação")
+st.sidebar.title("Navegação")
 pagina = st.sidebar.radio(
     "Ir para:",
     ["🎲 Cadastro", "📋 Participantes", "🎯 Resultado"],
