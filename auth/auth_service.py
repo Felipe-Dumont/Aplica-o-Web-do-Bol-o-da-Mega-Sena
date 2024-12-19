@@ -25,6 +25,10 @@ class AuthService:
 
     @staticmethod
     def verify_access_code(code: str) -> bool:
+        # Se já estiver autenticado pelo cookie, retorna True
+        if st.session_state.get('_cookie_auth_status'):
+            return True
+            
         code_hash = hashlib.sha256(code.encode()).hexdigest()
         with get_db() as conn:
             cursor = conn.cursor()
@@ -38,4 +42,11 @@ class AuthService:
         with get_db() as conn:
             conn.execute("UPDATE auth_config SET access_code_hash = ?", (new_code_hash,))
             conn.commit()
-            return True 
+            # Limpa o cookie de autenticação ao mudar a senha
+            st.session_state['_cookie_auth_status'] = False
+            return True
+
+    @staticmethod
+    def logout():
+        st.session_state.authentication_status = False
+        st.session_state['_cookie_auth_status'] = False 

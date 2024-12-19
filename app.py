@@ -20,73 +20,73 @@ require_auth()
 # CSS atualizado para melhor estilização dos botões
 st.markdown("""
 <style>
-    .numeros-container {
-        padding: 20px;
-        background: #f8f9fa;
-        border-radius: 10px;
+    .numero-grid {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 8px;
         margin: 20px 0;
     }
     
-    .numeros-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
-        gap: 8px;
-        justify-items: center;
+    .stButton > button {
+        width: 45px !important;
+        height: 45px !important;
+        border-radius: 50% !important;
+        padding: 0px !important;
+        font-weight: bold !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background-color: white !important;
+        color: #1f1f1f !important;
+        border: 2px solid #4CAF50 !important;
     }
     
-    .numero-btn {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        border: 2px solid #4CAF50;
-        background-color: white;
-        color: #4CAF50;
-        font-weight: bold;
-        font-size: 16px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
+    .stButton > button:hover {
+        background-color: #e8f5e9 !important;
+        transform: scale(1.05);
+        transition: all 0.2s ease;
     }
     
-    .numero-btn:hover {
-        transform: scale(1.1);
-        background-color: #e8f5e9;
+    .stButton > button[data-selected="true"] {
+        background-color: #4CAF50 !important;
+        color: white !important;
+        border-color: #4CAF50 !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
     }
     
-    .numero-btn.selecionado {
+    .numeros-selecionados-container {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin: 20px 0;
+        text-align: center;
+    }
+    
+    .numero-selecionado-badge {
+        display: inline-block;
         background-color: #4CAF50;
         color: white;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-    
-    .numeros-selecionados {
-        margin-top: 15px;
-        padding: 10px;
-        background: #e8f5e9;
-        border-radius: 5px;
-        text-align: center;
-    }
-    
-    .numeros-selecionados span {
-        display: inline-block;
-        background: #4CAF50;
-        color: white;
-        width: 35px;
-        height: 35px;
+        width: 40px;
+        height: 40px;
+        line-height: 40px;
         border-radius: 50%;
-        margin: 0 5px;
-        line-height: 35px;
+        margin: 5px;
+        font-weight: bold;
+        text-align: center;
+    }
+    
+    .contador-container {
+        text-align: center;
+        padding: 10px;
+        margin-bottom: 15px;
+        background-color: #e8f5e9;
+        border-radius: 5px;
         font-weight: bold;
     }
     
-    .contador-numeros {
-        text-align: center;
-        margin-bottom: 10px;
-        font-weight: bold;
-        color: #2E7D32;
+    div[data-testid="stHorizontalBlock"] {
+        gap: 0px !important;
+        margin: 0px !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -101,10 +101,47 @@ st.sidebar.info("""
     - Visualizar lista completa de participantes
 """)
 
-# Sidebar para configurações
+# Sidebar para configurações e informações de pagamento
 with st.sidebar:
     st.header("Configurações")
     valor_cota = st.number_input("Valor da Cota (R$)", min_value=1.0, value=10.0)
+    
+    # Adiciona separador
+    st.markdown("---")
+    
+    # Seção de dados para pagamento
+    st.header("💰 Dados para Pagamento")
+    
+    # Expander para PIX
+    with st.expander("📱 Pagar com PIX", expanded=True):
+        st.markdown("""
+            ### Chave PIX
+            ```
+            12345678900
+            ```
+            **Tipo:** CPF
+            
+            ### Dados do Beneficiário
+            **Nome:** João da Silva
+            **Banco:** NuBank
+            
+            > **Importante:** Após o pagamento, envie o comprovante para confirmação.
+            
+            ### Como pagar:
+            1. Abra seu app do banco
+            2. Escolha pagar com PIX
+            3. Cole a chave acima
+            4. Digite o valor da sua cota
+            5. Confirme os dados e pague
+        """)
+    
+    # Mensagem de suporte
+    st.markdown("---")
+    st.markdown("""
+        ### ❓ Precisa de ajuda?
+        Entre em contato pelo WhatsApp:
+        **📱 (11) 99999-9999**
+    """)
 
 # Formulário para adicionar participante
 with st.form("novo_participante", clear_on_submit=True):
@@ -116,54 +153,67 @@ with st.form("novo_participante", clear_on_submit=True):
     with col2:
         valor_pago = st.number_input("Valor Pago (R$)", min_value=0.0, value=valor_cota)
     
-    st.markdown("### Escolha 6 números")
-    
-    # Criar grid de números usando colunas do Streamlit
-    numeros_por_linha = 10
-    total_numeros = 60
-    
     # Inicializar números selecionados se não existir
     if 'numeros_selecionados' not in st.session_state:
         st.session_state.numeros_selecionados = set()
-    
-    # Criar grid de números
-    for linha in range((total_numeros + numeros_por_linha - 1) // numeros_por_linha):
-        cols = st.columns(numeros_por_linha)
-        for i in range(numeros_por_linha):
-            numero = linha * numeros_por_linha + i + 1
-            if numero <= total_numeros:
-                # Criar um checkbox estilizado como botão
-                is_selected = numero in st.session_state.numeros_selecionados
-                if cols[i].checkbox(
-                    str(numero),
-                    value=is_selected,
-                    key=f"num_{numero}",
-                    help="Clique para selecionar/desselecionar"
-                ):
-                    if numero not in st.session_state.numeros_selecionados and len(st.session_state.numeros_selecionados) < 6:
-                        st.session_state.numeros_selecionados.add(numero)
-                else:
-                    if numero in st.session_state.numeros_selecionados:
-                        st.session_state.numeros_selecionados.remove(numero)
-    
+
+    # Contador de números selecionados
+    st.markdown(
+        f"""
+        <div class="contador-container">
+            Selecione {6 - len(st.session_state.numeros_selecionados)} números
+            ({len(st.session_state.numeros_selecionados)}/6 selecionados)
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Grid de números
+    for linha in range(6):
+        cols = st.columns(10)
+        for i in range(10):
+            numero = linha * 10 + i + 1
+            if numero <= 60:
+                with cols[i]:
+                    # Verifica se o número já está selecionado
+                    is_selected = numero in st.session_state.numeros_selecionados
+                    # Cria o botão com estilo condicional
+                    if st.button(
+                        str(numero),
+                        key=f"btn_{numero}",
+                        disabled=len(st.session_state.numeros_selecionados) >= 6 and not is_selected,
+                        help="Clique para selecionar/desselecionar"
+                    ):
+                        if is_selected:
+                            st.session_state.numeros_selecionados.remove(numero)
+                        elif len(st.session_state.numeros_selecionados) < 6:
+                            st.session_state.numeros_selecionados.add(numero)
+                        st.rerun()
+
     # Exibir números selecionados
     if st.session_state.numeros_selecionados:
         numeros_ordenados = sorted(st.session_state.numeros_selecionados)
         st.markdown(
-            "<div style='text-align: center; margin: 20px 0; padding: 10px; "
-            "background-color: #e8f5e9; border-radius: 5px;'>"
-            "<b>Números selecionados:</b><br>" +
-            " ".join([f"<span style='display: inline-block; width: 35px; height: 35px; "
-                     f"line-height: 35px; border-radius: 50%; background-color: #4CAF50; "
-                     f"color: white; margin: 5px; font-weight: bold;'>{num}</span>"
+            """
+            <div class="numeros-selecionados-container">
+                <h4>Números selecionados:</h4>
+                """ +
+            "".join([f'<span class="numero-selecionado-badge">{num}</span>' 
                      for num in numeros_ordenados]) +
             "</div>",
             unsafe_allow_html=True
         )
+
+    # Botões de ação
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.form_submit_button("🎲 Limpar Seleção", type="secondary"):
+            st.session_state.numeros_selecionados = set()
+            st.rerun()
     
-    # Botão de submit do formulário
-    submitted = st.form_submit_button("Adicionar Participante")
-    
+    with col2:
+        submitted = st.form_submit_button("✅ Adicionar Participante", type="primary")
+
     if submitted:
         if not nome:
             st.error("Por favor, preencha o nome do participante!")
