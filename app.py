@@ -127,6 +127,20 @@ st.markdown("""
         background-color: #45a049 !important;
         border: none !important;
     }
+    
+    /* Estilo para o botão de adicionar participante */
+    .stButton > button[data-testid="baseButton-primary"] {
+        background-color: #4CAF50 !important;
+        color: white !important;
+        border: none !important;
+        width: 100% !important;
+        font-weight: bold !important;
+    }
+    
+    .stButton > button[data-testid="baseButton-primary"]:hover {
+        background-color: #45a049 !important;
+        border: none !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -256,13 +270,7 @@ with st.form("novo_participante", clear_on_submit=True):
         submitted = st.form_submit_button(
             "✅ Adicionar Participante",
             type="primary",
-            use_container_width=True,
-            style={
-                'background-color': '#4CAF50',
-                'color': 'white',
-                'border': 'none',
-                'font-weight': 'bold'
-            }
+            use_container_width=True
         )
         if submitted:
             if not nome:
