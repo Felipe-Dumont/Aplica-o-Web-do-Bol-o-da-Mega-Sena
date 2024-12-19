@@ -1,12 +1,8 @@
 import streamlit as st
 import pandas as pd
 from services.participante_service import ParticipanteService
-from auth.auth_service import require_auth
 
 def app():
-    # Requer autenticação
-    require_auth()
-    
     st.title("📋 Lista de Participantes")
     
     participantes = ParticipanteService.listar_participantes()
