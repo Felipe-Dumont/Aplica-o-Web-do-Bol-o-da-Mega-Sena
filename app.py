@@ -104,7 +104,7 @@ st.sidebar.info("""
 # Sidebar para configurações e informações de pagamento
 with st.sidebar:
     st.header("Configurações")
-    valor_cota = st.number_input("Valor da Cota (R$)", min_value=1.0, value=10.0)
+    st.write(f"Valor da Cota: R$ {ParticipanteService.VALOR_COTA:.2f}")
     
     # Adiciona separador
     st.markdown("---")
@@ -146,14 +146,26 @@ with st.sidebar:
 # Formulário para adicionar participante
 with st.form("novo_participante", clear_on_submit=True):
     st.subheader("Adicionar Novo Participante")
+    
+    # Nome do participante
+    nome = st.text_input("Nome do Participante")
+    
+    # Seleção de quantidade de cotas
     col1, col2 = st.columns(2)
-    
     with col1:
-        nome = st.text_input("Nome do Participante")
-    with col2:
-        valor_pago = st.number_input("Valor Pago (R$)", min_value=0.0, value=valor_cota)
+        quantidade_cotas = st.number_input(
+            "Quantidade de Cotas", 
+            min_value=1, 
+            value=1, 
+            step=1,
+            help="Cada cota dá direito a 6 números"
+        )
     
-    # Adicionar seleção de status de pagamento
+    with col2:
+        valor_total = ParticipanteService.calcular_valor_total(quantidade_cotas)
+        st.write(f"Valor Total: R$ {valor_total:.2f}")
+        
+    # Status do pagamento
     status_pagamento = st.selectbox(
         "Status do Pagamento",
         options=["Pendente", "Pago", "Confirmado"],
@@ -164,36 +176,37 @@ with st.form("novo_participante", clear_on_submit=True):
     if 'numeros_selecionados' not in st.session_state:
         st.session_state.numeros_selecionados = set()
 
-    # Contador de números selecionados
+    # Atualizar o contador para mostrar o total de números necessários
+    numeros_necessarios = 6 * quantidade_cotas
     st.markdown(
         f"""
         <div class="contador-container">
-            Selecione {6 - len(st.session_state.numeros_selecionados)} números
-            ({len(st.session_state.numeros_selecionados)}/6 selecionados)
+            Selecione {numeros_necessarios - len(st.session_state.numeros_selecionados)} números
+            ({len(st.session_state.numeros_selecionados)}/{numeros_necessarios} selecionados)
         </div>
         """,
         unsafe_allow_html=True
     )
 
     # Grid de números
+    col_grid = st.columns(10)
     for linha in range(6):
-        cols = st.columns(10)
         for i in range(10):
             numero = linha * 10 + i + 1
             if numero <= 60:
-                with cols[i]:
+                with col_grid[i]:
                     # Verifica se o número já está selecionado
                     is_selected = numero in st.session_state.numeros_selecionados
                     # Cria o botão com estilo condicional
-                    if st.button(
+                    if st.form_submit_button(
                         str(numero),
                         key=f"btn_{numero}",
-                        disabled=len(st.session_state.numeros_selecionados) >= 6 and not is_selected,
-                        help="Clique para selecionar/desselecionar"
+                        disabled=len(st.session_state.numeros_selecionados) >= numeros_necessarios and not is_selected,
+                        type="secondary" if not is_selected else "primary"
                     ):
                         if is_selected:
                             st.session_state.numeros_selecionados.remove(numero)
-                        elif len(st.session_state.numeros_selecionados) < 6:
+                        elif len(st.session_state.numeros_selecionados) < numeros_necessarios:
                             st.session_state.numeros_selecionados.add(numero)
                         st.rerun()
 
@@ -225,14 +238,15 @@ with st.form("novo_participante", clear_on_submit=True):
         if submitted:
             if not nome:
                 st.error("Por favor, preencha o nome do participante!")
-            elif len(st.session_state.numeros_selecionados) != 6:
-                st.error("Por favor, escolha exatamente 6 números!")
+            elif len(st.session_state.numeros_selecionados) != numeros_necessarios:
+                st.error(f"Por favor, escolha exatamente {numeros_necessarios} números!")
             else:
                 novo_participante = Participante(
                     nome=nome,
-                    valor_pago=valor_pago,
+                    valor_pago=valor_total,
                     numeros_escolhidos=list(st.session_state.numeros_selecionados),
-                    status_pagamento=status_pagamento
+                    status_pagamento=status_pagamento,
+                    quantidade_cotas=quantidade_cotas
                 )
                 
                 if ParticipanteService.adicionar_participante(novo_participante):
@@ -249,7 +263,8 @@ if participantes:
     df_participantes = pd.DataFrame([
         {
             'Nome': p.nome,
-            'Valor_Pago': p.valor_pago,
+            'Qtd. Cotas': p.quantidade_cotas,
+            'Valor_Pago': f"R$ {p.valor_pago:.2f}",
             'Numeros_Escolhidos': str(sorted(p.numeros_escolhidos)),
             'Data_Pagamento': p.data_pagamento,
             'Status': p.status_pagamento

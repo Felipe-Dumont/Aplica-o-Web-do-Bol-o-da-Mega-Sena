@@ -7,6 +7,7 @@ class Participante:
     nome: str
     valor_pago: float
     numeros_escolhidos: List[int]
+    quantidade_cotas: int = 1
     data_pagamento: str = None
     id: int = None
     status_pagamento: str = "Pendente"

@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS participantes (
     valor_pago REAL NOT NULL,
     numeros_escolhidos TEXT NOT NULL,
     data_pagamento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status_pagamento TEXT DEFAULT 'Pendente'
+    status_pagamento TEXT DEFAULT 'Pendente',
+    quantidade_cotas INTEGER DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS auth_config (

@@ -3,6 +3,8 @@ from models.participante import Participante
 from config.database import get_db
 
 class ParticipanteService:
+    VALOR_COTA = 35.0  # Valor fixo da cota
+
     @staticmethod
     def adicionar_participante(participante: Participante) -> bool:
         try:
@@ -10,10 +12,19 @@ class ParticipanteService:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                INSERT INTO participantes (nome, valor_pago, numeros_escolhidos, status_pagamento)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO participantes (
+                    nome, valor_pago, numeros_escolhidos, 
+                    status_pagamento, quantidade_cotas
+                )
+                VALUES (?, ?, ?, ?, ?)
                 """,
-                (participante.nome, participante.valor_pago, ','.join(map(str, participante.numeros_escolhidos)), participante.status_pagamento)
+                (
+                    participante.nome,
+                    participante.valor_pago,
+                    ','.join(map(str, participante.numeros_escolhidos)),
+                    participante.status_pagamento,
+                    participante.quantidade_cotas
+                )
             )
             conn.commit()
             return True
@@ -22,6 +33,10 @@ class ParticipanteService:
             return False
         finally:
             conn.close()
+
+    @staticmethod
+    def calcular_valor_total(quantidade_cotas: int) -> float:
+        return quantidade_cotas * ParticipanteService.VALOR_COTA
 
     @staticmethod
     def atualizar_status_pagamento(participante_id, novo_status):
