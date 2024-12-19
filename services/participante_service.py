@@ -1,6 +1,7 @@
 from typing import List
 from models.participante import Participante
 from config.database import get_db
+import sqlite3
 
 class ParticipanteService:
     VALOR_COTA = 35.0  # Valor fixo da cota
@@ -9,28 +10,76 @@ class ParticipanteService:
     def adicionar_participante(participante: Participante) -> bool:
         try:
             with get_db() as conn:
+                # Configurar para retornar dicionários
+                conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
+                
+                # Debug
+                print(f"Tentando adicionar participante: {participante}")
+                
+                # Garantir que os números estejam em formato string
+                numeros_str = ','.join(map(str, sorted(participante.numeros_escolhidos)))
+                
                 cursor.execute(
                     """
                     INSERT INTO participantes (
-                        nome, valor_pago, numeros_escolhidos, 
-                        status_pagamento, quantidade_cotas
+                        nome, 
+                        valor_pago, 
+                        numeros_escolhidos, 
+                        status_pagamento, 
+                        quantidade_cotas,
+                        data_pagamento
                     )
-                    VALUES (?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, datetime('now'))
                     """,
                     (
                         participante.nome,
                         participante.valor_pago,
-                        ','.join(map(str, participante.numeros_escolhidos)),
+                        numeros_str,
                         participante.status_pagamento,
                         participante.quantidade_cotas
                     )
                 )
                 conn.commit()
+                print("Participante adicionado com sucesso!")
                 return True
         except Exception as e:
             print(f"Erro ao adicionar participante: {e}")
             return False
+
+    @staticmethod
+    def listar_participantes() -> List[Participante]:
+        try:
+            with get_db() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM participantes ORDER BY id DESC")
+                rows = cursor.fetchall()
+                
+                participantes = []
+                for row in rows:
+                    try:
+                        # Converte a string de números de volta para lista
+                        numeros = [int(n) for n in row['numeros_escolhidos'].split(',') if n]
+                        
+                        participante = Participante(
+                            id=row['id'],
+                            nome=row['nome'],
+                            valor_pago=float(row['valor_pago']),
+                            numeros_escolhidos=numeros,
+                            data_pagamento=row['data_pagamento'],
+                            status_pagamento=row['status_pagamento'],
+                            quantidade_cotas=int(row['quantidade_cotas'])
+                        )
+                        participantes.append(participante)
+                    except Exception as e:
+                        print(f"Erro ao processar participante: {e}")
+                        continue
+                
+                return participantes
+        except Exception as e:
+            print(f"Erro ao listar participantes: {e}")
+            return []
 
     @staticmethod
     def calcular_valor_total(quantidade_cotas: int) -> float:
@@ -51,31 +100,6 @@ class ParticipanteService:
         except Exception as e:
             print(f"Erro ao atualizar status: {e}")
             return False
-
-    @staticmethod
-    def listar_participantes() -> List[Participante]:
-        with get_db() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM participantes")
-            rows = cursor.fetchall()
-            
-            participantes = []
-            for row in rows:
-                # Converte a string de números de volta para lista
-                numeros = [int(n) for n in row['numeros_escolhidos'].split(',') if n]
-                
-                participante = Participante(
-                    id=row['id'],
-                    nome=row['nome'],
-                    valor_pago=row['valor_pago'],
-                    numeros_escolhidos=numeros,
-                    data_pagamento=row['data_pagamento'],
-                    status_pagamento=row['status_pagamento'],
-                    quantidade_cotas=row['quantidade_cotas']
-                )
-                participantes.append(participante)
-            
-            return participantes
 
     @staticmethod
     def obter_estatisticas():
