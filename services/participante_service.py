@@ -8,31 +8,29 @@ class ParticipanteService:
     @staticmethod
     def adicionar_participante(participante: Participante) -> bool:
         try:
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO participantes (
-                    nome, valor_pago, numeros_escolhidos, 
-                    status_pagamento, quantidade_cotas
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    """
+                    INSERT INTO participantes (
+                        nome, valor_pago, numeros_escolhidos, 
+                        status_pagamento, quantidade_cotas
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        participante.nome,
+                        participante.valor_pago,
+                        ','.join(map(str, participante.numeros_escolhidos)),
+                        participante.status_pagamento,
+                        participante.quantidade_cotas
+                    )
                 )
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (
-                    participante.nome,
-                    participante.valor_pago,
-                    ','.join(map(str, participante.numeros_escolhidos)),
-                    participante.status_pagamento,
-                    participante.quantidade_cotas
-                )
-            )
-            conn.commit()
-            return True
+                conn.commit()
+                return True
         except Exception as e:
             print(f"Erro ao adicionar participante: {e}")
             return False
-        finally:
-            conn.close()
 
     @staticmethod
     def calcular_valor_total(quantidade_cotas: int) -> float:
@@ -41,20 +39,18 @@ class ParticipanteService:
     @staticmethod
     def atualizar_status_pagamento(participante_id, novo_status):
         try:
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE participantes 
-                SET status_pagamento = ?
-                WHERE id = ?
-            """, (novo_status, participante_id))
-            conn.commit()
-            return True
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE participantes 
+                    SET status_pagamento = ?
+                    WHERE id = ?
+                """, (novo_status, participante_id))
+                conn.commit()
+                return True
         except Exception as e:
             print(f"Erro ao atualizar status: {e}")
             return False
-        finally:
-            conn.close()
 
     @staticmethod
     def listar_participantes() -> List[Participante]:
@@ -63,17 +59,23 @@ class ParticipanteService:
             cursor.execute("SELECT * FROM participantes")
             rows = cursor.fetchall()
             
-            return [
-                Participante(
+            participantes = []
+            for row in rows:
+                # Converte a string de números de volta para lista
+                numeros = [int(n) for n in row['numeros_escolhidos'].split(',') if n]
+                
+                participante = Participante(
                     id=row['id'],
                     nome=row['nome'],
                     valor_pago=row['valor_pago'],
-                    numeros_escolhidos=row['numeros_escolhidos'],
+                    numeros_escolhidos=numeros,
                     data_pagamento=row['data_pagamento'],
-                    status_pagamento=row['status_pagamento']
+                    status_pagamento=row['status_pagamento'],
+                    quantidade_cotas=row['quantidade_cotas']
                 )
-                for row in rows
-            ]
+                participantes.append(participante)
+            
+            return participantes
 
     @staticmethod
     def obter_estatisticas():
