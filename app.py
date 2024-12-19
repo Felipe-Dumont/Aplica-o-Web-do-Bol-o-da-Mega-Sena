@@ -54,7 +54,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Configurar navegação no sidebar
-st.sidebar.title("Navegação")
+# st.sidebar.title("Navegação")
 pagina = st.sidebar.radio(
     "Ir para:",
     ["🎲 Cadastro", "📋 Participantes", "🎯 Resultado"],
