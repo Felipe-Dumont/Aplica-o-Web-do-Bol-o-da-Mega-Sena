@@ -203,21 +203,10 @@ with st.form("novo_participante", clear_on_submit=True):
     # Nome do participante
     nome = st.text_input("Nome do Participante")
     
-    # Seleção de quantidade de cotas
-    col1, col2 = st.columns(2)
-    with col1:
-        quantidade_cotas = st.number_input(
-            "Quantidade de Cotas", 
-            min_value=1, 
-            value=1, 
-            step=1,
-            help="Cada cota dá direito a 6 números"
-        )
+    # Valor fixo
+    valor_total = ParticipanteService.VALOR_COTA
+    st.write(f"Valor da Cota: R$ {valor_total:.2f}")
     
-    with col2:
-        valor_total = ParticipanteService.calcular_valor_total(quantidade_cotas)
-        st.write(f"Valor Total: R$ {valor_total:.2f}")
-        
     # Status do pagamento
     status_pagamento = st.selectbox(
         "Status do Pagamento",
@@ -227,18 +216,14 @@ with st.form("novo_participante", clear_on_submit=True):
 
     # Inicializar números selecionados se não existir
     if 'numeros_selecionados' not in st.session_state:
-        st.session_state.numeros_selecionados = set()
+        st.session_state.numeros_selecionados = []
 
-    # Substituir a parte do grid de números por um multiselect
-    numeros_disponiveis = list(range(1, 61))
-    numeros_necessarios = 6 * quantidade_cotas
-    
     # Usar multiselect para seleção dos números
     numeros_selecionados = st.multiselect(
-        f"Selecione {numeros_necessarios} números:",
-        options=numeros_disponiveis,
+        "Selecione 6 números:",
+        options=list(range(1, 61)),
         default=st.session_state.get('numeros_selecionados', []),
-        max_selections=numeros_necessarios,
+        max_selections=6,
         format_func=lambda x: f"{x:02d}"  # Formata os números com zero à esquerda
     )
     
@@ -275,20 +260,20 @@ with st.form("novo_participante", clear_on_submit=True):
         if submitted:
             if not nome:
                 st.error("Por favor, preencha o nome do participante!")
-            elif len(numeros_selecionados) != numeros_necessarios:
-                st.error(f"Por favor, escolha exatamente {numeros_necessarios} números!")
+            elif len(numeros_selecionados) != 6:
+                st.error("Por favor, escolha exatamente 6 números!")
             else:
                 novo_participante = Participante(
                     nome=nome,
                     valor_pago=valor_total,
                     numeros_escolhidos=numeros_selecionados,
                     status_pagamento=status_pagamento,
-                    quantidade_cotas=quantidade_cotas
+                    quantidade_cotas=1  # Fixo em 1 cota
                 )
                 
                 if ParticipanteService.adicionar_participante(novo_participante):
                     st.success("Participante adicionado com sucesso!")
-                    st.session_state.numeros_selecionados = set()
+                    st.session_state.numeros_selecionados = []
                     st.rerun()
 
 # Exibição dos participantes
@@ -299,6 +284,7 @@ if participantes:
     # Convertendo para DataFrame para exibição
     df_participantes = pd.DataFrame([
         {
+            'ID': p.id,
             'Nome': p.nome,
             'Qtd. Cotas': p.quantidade_cotas,
             'Valor Pago': f"R$ {p.valor_pago:.2f}",
@@ -327,6 +313,32 @@ if participantes:
         ),
         use_container_width=True
     )
+    
+    # Adicionar seção para atualizar status
+    st.subheader("Atualizar Status de Pagamento")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        participante_id = st.selectbox(
+            "Selecione o Participante",
+            options=df_participantes['ID'].tolist(),
+            format_func=lambda x: df_participantes[df_participantes['ID'] == x]['Nome'].iloc[0]
+        )
+    
+    with col2:
+        novo_status = st.selectbox(
+            "Novo Status",
+            options=["Pendente", "Pago", "Confirmado"],
+            key="novo_status"
+        )
+    
+    with col3:
+        if st.button("Atualizar Status", type="primary"):
+            if ParticipanteService.atualizar_status_pagamento(participante_id, novo_status):
+                st.success(f"Status atualizado com sucesso!")
+                st.rerun()
+            else:
+                st.error("Erro ao atualizar status")
     
     # Análise dos números
     st.subheader("Análise dos Números")

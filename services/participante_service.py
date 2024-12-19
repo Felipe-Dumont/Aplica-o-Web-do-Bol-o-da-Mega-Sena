@@ -100,11 +100,22 @@ class ParticipanteService:
         try:
             with get_db() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE participantes 
-                    SET status_pagamento = ?
-                    WHERE id = ?
-                """, (novo_status, participante_id))
+                
+                # Atualizar status e data de pagamento se for marcado como pago
+                if novo_status in ['Pago', 'Confirmado']:
+                    cursor.execute("""
+                        UPDATE participantes 
+                        SET status_pagamento = ?,
+                            data_pagamento = datetime('now', 'localtime')
+                        WHERE id = ?
+                    """, (novo_status, participante_id))
+                else:
+                    cursor.execute("""
+                        UPDATE participantes 
+                        SET status_pagamento = ?
+                        WHERE id = ?
+                    """, (novo_status, participante_id))
+                
                 conn.commit()
                 return True
         except Exception as e:
