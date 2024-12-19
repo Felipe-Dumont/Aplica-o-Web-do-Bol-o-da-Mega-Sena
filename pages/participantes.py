@@ -3,7 +3,6 @@ import pandas as pd
 from services.participante_service import ParticipanteService
 
 def app():
-    st.title("📋 Lista de Participantes")
     
     participantes = ParticipanteService.listar_participantes()
     if participantes:

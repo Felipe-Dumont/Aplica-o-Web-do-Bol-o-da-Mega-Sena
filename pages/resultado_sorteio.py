@@ -3,9 +3,7 @@ import pandas as pd
 from services.participante_service import ParticipanteService
 import time
 
-def app():
-    st.title("🎯 Resultado do Sorteio")
-    
+def app():    
     # Input dos números sorteados
     st.subheader("Digite os números sorteados")
     
