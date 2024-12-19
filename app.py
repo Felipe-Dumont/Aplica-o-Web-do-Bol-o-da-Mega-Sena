@@ -115,6 +115,18 @@ st.markdown("""
         margin: 0;
         text-align: center;
     }
+    
+    .stButton button[kind="primary"] {
+        background-color: #4CAF50 !important;
+        color: white !important;
+        border: none !important;
+        font-weight: bold !important;
+    }
+    
+    .stButton button[kind="primary"]:hover {
+        background-color: #45a049 !important;
+        border: none !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -205,22 +217,11 @@ with st.form("novo_participante", clear_on_submit=True):
 
     # Substituir a parte do grid de números por um multiselect
     numeros_disponiveis = list(range(1, 61))
-    
-    # Atualizar o contador para mostrar o total de números necessários
     numeros_necessarios = 6 * quantidade_cotas
-    st.markdown(
-        f"""
-        <div class="contador-container">
-            Você precisa selecionar {numeros_necessarios} números
-            ({len(st.session_state.get('numeros_selecionados', []))}/{numeros_necessarios} selecionados)
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
+    
     # Usar multiselect para seleção dos números
     numeros_selecionados = st.multiselect(
-        "Selecione seus números:",
+        f"Selecione {numeros_necessarios} números:",
         options=numeros_disponiveis,
         default=st.session_state.get('numeros_selecionados', []),
         max_selections=numeros_necessarios,
@@ -252,7 +253,17 @@ with st.form("novo_participante", clear_on_submit=True):
             st.rerun()
     
     with col2:
-        submitted = st.form_submit_button("✅ Adicionar Participante", type="primary")
+        submitted = st.form_submit_button(
+            "✅ Adicionar Participante",
+            type="primary",
+            use_container_width=True,
+            style={
+                'background-color': '#4CAF50',
+                'color': 'white',
+                'border': 'none',
+                'font-weight': 'bold'
+            }
+        )
         if submitted:
             if not nome:
                 st.error("Por favor, preencha o nome do participante!")
