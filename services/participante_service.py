@@ -5,17 +5,41 @@ from config.database import get_db
 class ParticipanteService:
     @staticmethod
     def adicionar_participante(participante: Participante) -> bool:
-        with get_db() as conn:
+        try:
+            conn = get_db()
             cursor = conn.cursor()
             cursor.execute(
                 """
-                INSERT INTO participantes (nome, valor_pago, numeros_escolhidos, data_pagamento)
+                INSERT INTO participantes (nome, valor_pago, numeros_escolhidos, status_pagamento)
                 VALUES (?, ?, ?, ?)
                 """,
-                (participante.nome, participante.valor_pago, str(sorted(participante.numeros_escolhidos)), participante.data_pagamento)
+                (participante.nome, participante.valor_pago, ','.join(map(str, participante.numeros_escolhidos)), participante.status_pagamento)
             )
             conn.commit()
             return True
+        except Exception as e:
+            print(f"Erro ao adicionar participante: {e}")
+            return False
+        finally:
+            conn.close()
+
+    @staticmethod
+    def atualizar_status_pagamento(participante_id, novo_status):
+        try:
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE participantes 
+                SET status_pagamento = ?
+                WHERE id = ?
+            """, (novo_status, participante_id))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Erro ao atualizar status: {e}")
+            return False
+        finally:
+            conn.close()
 
     @staticmethod
     def listar_participantes() -> List[Participante]:
@@ -30,7 +54,8 @@ class ParticipanteService:
                     nome=row['nome'],
                     valor_pago=row['valor_pago'],
                     numeros_escolhidos=row['numeros_escolhidos'],
-                    data_pagamento=row['data_pagamento']
+                    data_pagamento=row['data_pagamento'],
+                    status_pagamento=row['status_pagamento']
                 )
                 for row in rows
             ]

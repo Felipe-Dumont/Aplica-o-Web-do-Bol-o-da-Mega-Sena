@@ -9,6 +9,7 @@ class Participante:
     numeros_escolhidos: List[int]
     data_pagamento: str = None
     id: int = None
+    status_pagamento: str = "Pendente"
 
     def __post_init__(self):
         if self.data_pagamento is None:

@@ -153,6 +153,13 @@ with st.form("novo_participante", clear_on_submit=True):
     with col2:
         valor_pago = st.number_input("Valor Pago (R$)", min_value=0.0, value=valor_cota)
     
+    # Adicionar seleção de status de pagamento
+    status_pagamento = st.selectbox(
+        "Status do Pagamento",
+        options=["Pendente", "Pago", "Confirmado"],
+        index=0
+    )
+
     # Inicializar números selecionados se não existir
     if 'numeros_selecionados' not in st.session_state:
         st.session_state.numeros_selecionados = set()
@@ -204,32 +211,34 @@ with st.form("novo_participante", clear_on_submit=True):
             unsafe_allow_html=True
         )
 
-    # Botões de ação
+    # Botões de ação em colunas
     col1, col2 = st.columns(2)
+    
     with col1:
-        if st.form_submit_button("🎲 Limpar Seleção", type="secondary"):
+        limpar = st.form_submit_button("🎲 Limpar Seleção", type="secondary")
+        if limpar:
             st.session_state.numeros_selecionados = set()
             st.rerun()
     
     with col2:
         submitted = st.form_submit_button("✅ Adicionar Participante", type="primary")
-
-    if submitted:
-        if not nome:
-            st.error("Por favor, preencha o nome do participante!")
-        elif len(st.session_state.numeros_selecionados) != 6:
-            st.error("Por favor, escolha exatamente 6 números!")
-        else:
-            novo_participante = Participante(
-                nome=nome,
-                valor_pago=valor_pago,
-                numeros_escolhidos=list(st.session_state.numeros_selecionados)
-            )
-            
-            if ParticipanteService.adicionar_participante(novo_participante):
-                st.success("Participante adicionado com sucesso!")
-                st.session_state.numeros_selecionados = set()
-                st.rerun()
+        if submitted:
+            if not nome:
+                st.error("Por favor, preencha o nome do participante!")
+            elif len(st.session_state.numeros_selecionados) != 6:
+                st.error("Por favor, escolha exatamente 6 números!")
+            else:
+                novo_participante = Participante(
+                    nome=nome,
+                    valor_pago=valor_pago,
+                    numeros_escolhidos=list(st.session_state.numeros_selecionados),
+                    status_pagamento=status_pagamento
+                )
+                
+                if ParticipanteService.adicionar_participante(novo_participante):
+                    st.success("Participante adicionado com sucesso!")
+                    st.session_state.numeros_selecionados = set()
+                    st.rerun()
 
 # Exibição dos participantes
 participantes = ParticipanteService.listar_participantes()
@@ -242,12 +251,30 @@ if participantes:
             'Nome': p.nome,
             'Valor_Pago': p.valor_pago,
             'Numeros_Escolhidos': str(sorted(p.numeros_escolhidos)),
-            'Data_Pagamento': p.data_pagamento
+            'Data_Pagamento': p.data_pagamento,
+            'Status': p.status_pagamento
         }
         for p in participantes
     ])
     
-    st.dataframe(df_participantes, use_container_width=True)
+    # Adicionar estilo condicional baseado no status
+    def highlight_status(val):
+        if val == 'Pago':
+            return 'background-color: #90EE90'
+        elif val == 'Confirmado':
+            return 'background-color: #98FB98'
+        elif val == 'Pendente':
+            return 'background-color: #FFB6C6'
+        return ''
+
+    # Exibir DataFrame com estilo
+    st.dataframe(
+        df_participantes.style.applymap(
+            highlight_status,
+            subset=['Status']
+        ),
+        use_container_width=True
+    )
     
     # Análise dos números
     st.subheader("Análise dos Números")
